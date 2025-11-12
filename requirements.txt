@@ -1,0 +1,8 @@
+Flask>=2.2
+Flask-Login
+Flask-SQLAlchemy
+gunicorn
+numpy
+pandas
+scikit-learn
+tensorflow==2.20.0
