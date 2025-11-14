@@ -4,7 +4,7 @@
 # It does NOT affect your production or local database.
 
 from app import create_app, db
-from app.db import User
+from app.database import User
 
 app = create_app()
 

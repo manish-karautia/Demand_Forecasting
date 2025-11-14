@@ -14,7 +14,7 @@ def init_db(app):
 
 
 def create_test_user(app):
-    from app.db import User, db
+    from app.database import User, db
     with app.app_context():
         if not User.query.filter_by(email="test@example.com").first():
             u = User(email="test@example.com", password="hashed_password")
