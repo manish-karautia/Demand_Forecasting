@@ -47,3 +47,4 @@ class DemandForecaster2026:
     def forecast(self, input_data):
         """Run model prediction"""
         return self.model.predict(input_data)
+

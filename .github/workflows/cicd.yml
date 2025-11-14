@@ -20,17 +20,45 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install test deps
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest
 
-      - name: Run unit tests
+      # ------------------------------------
+      # FIX 1: Create instance/users.db for CI
+      # ------------------------------------
+      - name: Init SQLite for tests
         run: |
-          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-          pytest -q
-          
+          mkdir -p instance
+          python ci/create_users_db.py
+
+      # ------------------------------------
+      # FIX 2: Download MODELS for CI tests
+      # ------------------------------------
+      - name: Write GCP key
+        run: |
+          echo "${{ secrets.GCP_CREDENTIALS }}" > gcp_key.json
+          chmod 600 gcp_key.json
+
+      - name: Authenticate GCP
+        run: gcloud auth activate-service-account --key-file=gcp_key.json
+
+      - name: Download models into app/models
+        run: |
+          mkdir -p app/models
+          gsutil cp gs://${{ secrets.GCS_MODELS_BUCKET }}/* app/models/ || true
+          ls -la app/models
+
+      # ------------------------------------
+      # FIX 3: Run pytest with correct PATH
+      # ------------------------------------
+      - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest -q
+
   build-and-push:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -48,16 +76,11 @@ jobs:
           project_id: bulerez786
           export_default_credentials: true
 
-      - name: Download models from GCS (optional, bakes models into image)
+      # Optional — bake models inside Docker image
+      - name: Download models from GCS
         run: |
-          mkdir -p models
-          gsutil -m cp gs://YOUR_BUCKET_NAME/optimized_classifier_model.keras models/ || true
-          gsutil -m cp gs://YOUR_BUCKET_NAME/optimized_regressor_model.keras models/ || true
-          gsutil -m cp gs://YOUR_BUCKET_NAME/bayesian_optimization_results.pkl models/ || true
-          ls -la models || true
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+          mkdir -p app/models
+          gsutil -m cp gs://${{ secrets.GCS_MODELS_BUCKET }}/* app/models/ || true
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -65,7 +88,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -84,7 +107,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      - name: Set up gcloud
+      - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: bulerez786

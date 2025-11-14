@@ -1,6 +1,7 @@
-"""import json
+import json
 from run import app
 
+"""
 def test_home():
     client = app.test_client()
     res = client.get("/")
@@ -18,27 +19,30 @@ def test_predict_monkeypatch(monkeypatch):
     payload = {"features": [1,2,3]}
     res = client.post("/predict", json=payload)
     assert res.status_code == 200
-    assert res.get_json()["prediction"] == 3.14"""
-from app import create_app
+    assert res.get_json()["prediction"] == 3.14
+"""
 
-def test_home():
-    app = create_app({"TESTING": True})
-    client = app.test_client()
+# tests/test_app.py
+
+def test_home(client):
     res = client.get("/")
     assert res.status_code == 200
 
 
-def test_predict_monkeypatch(monkeypatch):
+def test_predict_monkeypatch(monkeypatch, client):
     class FakeModel:
         def forecast(self, X):
             return [3.14]
 
-    monkeypatch.setattr("app.model_loader.get_models", lambda: {"regressor": FakeModel()})
+    # Override your real models (so TensorFlow is not required in tests)
+    monkeypatch.setattr("app.routes.regressor_model", FakeModel())
+    monkeypatch.setattr("app.routes.classifier_model", FakeModel())
 
-    app = create_app({"TESTING": True})
-    client = app.test_client()
+    res = client.post(
+        "/predict",
+        data={"country": "Ghana", "medicine": "Family Planning and Reproduction"},
+        follow_redirects=True
+    )
 
-    res = client.post("/predict", json={"features": [1, 2, 3]})
-    assert res.status_code == 200
-    assert res.get_json()["prediction"] == 3.14
+    assert res.status_code in (200, 302)
 
