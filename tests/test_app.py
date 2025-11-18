@@ -1,5 +1,7 @@
 import json
 from run import app
+from app.database import User
+
 
 """
 def test_home():
