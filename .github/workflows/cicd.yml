@@ -10,15 +10,20 @@ env:
   IMAGE: ${{ secrets.DOCKER_USERNAME }}/medicine-forecast-app
 
 jobs:
+
+  # ---------------------------------------------------
+  # BUILD & TEST JOB
+  # ---------------------------------------------------
   build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install Dependencies
         run: |
@@ -26,25 +31,24 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
-      # -----------------------------------
-      # Create instance folder + users.db
-      # -----------------------------------
+      # Create SQLite users.db for tests
       - name: Init SQLite for tests
         run: |
           export PYTHONPATH="${PYTHONPATH}:$(pwd)"
           mkdir -p instance
           python ci/create_users_db.py
 
-      # -----------------------------------
-      # Download ML MODELS for CI
-      # -----------------------------------
-      - name: Write GCP key
-        run: |
-          echo "${{ secrets.GCP_CREDENTIALS }}" > gcp_key.json
-          chmod 600 gcp_key.json
+      # Authenticate to GCP for gsutil
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      - name: Authenticate GCP
-        run: gcloud auth activate-service-account --key-file=gcp_key.json
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          export_default_credentials: true
 
       - name: Download models into app/models
         run: |
@@ -52,20 +56,18 @@ jobs:
           gsutil cp gs://${{ secrets.GCS_MODELS_BUCKET }}/models/* app/models/ || true
           ls -la app/models
 
-      # -----------------------------------
-      # RUN TESTS
-      # -----------------------------------
       - name: Run unit tests
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: pytest -q
 
   # ---------------------------------------------------
-  # BUILD & PUSH DOCKER IMAGE TO DOCKERHUB
+  # BUILD & PUSH DOCKER IMAGE
   # ---------------------------------------------------
   build-and-push:
     needs: build-and-test
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -77,7 +79,7 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: bulerez786
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
           export_default_credentials: true
 
       - name: Download models from GCS
@@ -95,7 +97,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./DockerFile
+          file: ./Dockerfile
           push: true
           tags: ${{ env.IMAGE }}:latest
 
@@ -105,6 +107,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -116,7 +119,7 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: bulerez786
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
           export_default_credentials: true
 
       - name: Deploy to Cloud Run
