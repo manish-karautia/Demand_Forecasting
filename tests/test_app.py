@@ -63,7 +63,7 @@ def test_home(client):
 def test_predict_monkeypatch(monkeypatch, client):
 
     # -------------------------------
-    # 1) Mock current_user so login_required works
+    # 1) Fake current_user
     # -------------------------------
     class FakeUser:
         id = 1
@@ -72,25 +72,38 @@ def test_predict_monkeypatch(monkeypatch, client):
     monkeypatch.setattr("app.routes.current_user", FakeUser())
 
     # -------------------------------
-    # 2) Mock the ML models so TensorFlow does NOT load
+    # 2) Fake ML model
     # -------------------------------
     class FakeModel:
-        def forecast(self, X):
-            return [3.14]
-
-        def predict(self, X, verbose=0):
-            return [[3.14]]
+        def forecast(self, X): return [3.14]
+        def predict(self, X, verbose=0): return [[3.14]]
 
     monkeypatch.setattr("app.routes.regressor_model", FakeModel())
     monkeypatch.setattr("app.routes.classifier_model", FakeModel())
 
     # -------------------------------
-    # 3) Patch database queries used inside predict()
+    # 3) Mock Prediction.query properly
     # -------------------------------
+    class FakeQuery:
+        def filter(self, *args, **kwargs):
+            return self
+        
+        def filter_by(self, *args, **kwargs):
+            return self
+        
+        def order_by(self, *args, **kwargs):
+            return self
+        
+        def all(self):
+            return []   # No historical predictions
+
+    class FakePrediction:
+        query = FakeQuery()
+
     monkeypatch.setattr("app.routes.Prediction", FakePrediction)
 
     # -------------------------------
-    # 4) Run the actual route
+    # 4) Perform request
     # -------------------------------
     res = client.post(
         "/predict",
@@ -99,6 +112,7 @@ def test_predict_monkeypatch(monkeypatch, client):
     )
 
     assert res.status_code in (200, 302)
+
 
 
 # -------------------------------------------------
