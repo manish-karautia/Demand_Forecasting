@@ -1,12 +1,13 @@
-from app import create_app
+
+from app import create_app, db
+from app.database import User 
+
 
 app = create_app()
 
 if __name__ == '__main__':
     app.run(debug=True)
 
-from app import db, create_app
-#from app.models import User  # or wherever your User model is defined
 
 app = create_app()
 
