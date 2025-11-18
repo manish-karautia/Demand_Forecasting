@@ -22,6 +22,8 @@ def test_predict_monkeypatch(monkeypatch):
     assert res.status_code == 200
     assert res.get_json()["prediction"] == 3.14
 """
+
+"""
 # tests/test_app.py
 import pytest
 
@@ -46,3 +48,85 @@ def test_predict_monkeypatch(monkeypatch, client):
     )
 
     assert res.status_code in (200, 302)
+"""
+
+
+# tests/test_app.py
+import pytest
+from flask_login import AnonymousUserMixin
+
+def test_home(client):
+    res = client.get("/")
+    assert res.status_code == 200
+
+
+def test_predict_monkeypatch(monkeypatch, client):
+
+    # -------------------------------
+    # 1) Mock current_user so login_required works
+    # -------------------------------
+    class FakeUser:
+        id = 1
+        is_authenticated = True
+
+    monkeypatch.setattr("app.routes.current_user", FakeUser())
+
+    # -------------------------------
+    # 2) Mock the ML models so TensorFlow does NOT load
+    # -------------------------------
+    class FakeModel:
+        def forecast(self, X):
+            return [3.14]
+
+        def predict(self, X, verbose=0):
+            return [[3.14]]
+
+    monkeypatch.setattr("app.routes.regressor_model", FakeModel())
+    monkeypatch.setattr("app.routes.classifier_model", FakeModel())
+
+    # -------------------------------
+    # 3) Patch database queries used inside predict()
+    # -------------------------------
+    monkeypatch.setattr("app.routes.Prediction", FakePrediction)
+
+    # -------------------------------
+    # 4) Run the actual route
+    # -------------------------------
+    res = client.post(
+        "/predict",
+        data={"country": "Ghana", "medicine": "Family Planning and Reproduction"},
+        follow_redirects=True
+    )
+
+    assert res.status_code in (200, 302)
+
+
+# -------------------------------------------------
+# Fake Prediction model for the test environment
+# -------------------------------------------------
+class FakePrediction:
+    """A minimal fake replacement for the SQLAlchemy Prediction model."""
+    country = ""
+    medicine = ""
+    predicted_demand = "10 units"
+    timestamp = None
+    user_id = 1
+
+    def __init__(self, country="", medicine="", predicted_demand="", user_id=1):
+        self.country = country
+        self.medicine = medicine
+        self.predicted_demand = predicted_demand
+        self.user_id = user_id
+
+    @staticmethod
+    def query():
+        class FakeQuery:
+            def filter_by(self, **kwargs):
+                return self
+
+            def order_by(self, *args, **kwargs):
+                return self
+
+            def all(self):
+                return []
+        return FakeQuery()
