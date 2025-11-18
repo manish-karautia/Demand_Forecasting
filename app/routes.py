@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 import pandas as pd
 from datetime import date, datetime, time
-  # ✅ Needed for calendar_features
+  # Needed for calendar_features
 
 from flask import Blueprint, render_template, request, jsonify, abort
 from flask_login import login_required, current_user
@@ -127,7 +127,7 @@ def load_csv_forecast_2026(models_dir: str) -> int:
         COUNTRY_PRIORS[country] = pri
         loaded += 1
 
-    print(f"✅ CSV loader: loaded priors for {loaded} countries from '{os.path.basename(path)}'")
+    print(f" CSV loader: loaded priors for {loaded} countries from '{os.path.basename(path)}'")
     return loaded
 
 
@@ -161,10 +161,10 @@ def load_csv_forecast_2026(models_dir: str) -> int:
     #         COUNTRY_PRIORS[country] = pri
     #         loaded += 1
 
-    #     print(f"✅ Loaded forecast CSV '{os.path.basename(path)}' and updated priors for {loaded} countries.")
+    #     print(f"Loaded forecast CSV '{os.path.basename(path)}' and updated priors for {loaded} countries.")
     #     return loaded > 0
 
-    # print("ℹ️ CSV loader: matched files but none were usable.")
+    # print(" CSV loader: matched files but none were usable.")
     # return False
 
 # Call at import time
@@ -187,7 +187,7 @@ try:
     )
     print("✅ Models loaded successfully.")
 except Exception as e:
-    print(f"⚠️ WARNING: Could not load model files. Error: {e}")
+    print(f" WARNING: Could not load model files. Error: {e}")
     classifier_model, regressor_model = None, None
 # Try loading Bayesian optimization results9
 
@@ -270,7 +270,7 @@ def _try_load_bo_results(models_dir):
         # Try plain pickle
         try:
             obj = try_pickle(p)
-            print(f"✅ Loaded (pickle): {p}")
+            print(f" Loaded (pickle): {p}")
             return normalize(obj)
         except Exception as e:
             print(f"… pickle failed for {p}: {e}")
@@ -278,7 +278,7 @@ def _try_load_bo_results(models_dir):
         # Try joblib
         try:
             obj = try_joblib(p)
-            print(f"✅ Loaded (joblib): {p}")
+            print(f" Loaded (joblib): {p}")
             return normalize(obj)
         except Exception as e:
             print(f"… joblib failed for {p}: {e}")
@@ -286,7 +286,7 @@ def _try_load_bo_results(models_dir):
         # Try pandas.read_pickle
         try:
             obj = try_pandas(p)
-            print(f"✅ Loaded (pandas.read_pickle): {p}")
+            print(f" Loaded (pandas.read_pickle): {p}")
             return normalize(obj)
         except Exception as e:
             print(f"… pandas.read_pickle failed for {p}: {e}")
@@ -295,7 +295,7 @@ def _try_load_bo_results(models_dir):
         for mode in ("gzip", "bz2", "lzma"):
             try:
                 obj = try_compressed_pickle(p, mode)
-                print(f"✅ Loaded ({mode}): {p}")
+                print(f" Loaded ({mode}): {p}")
                 return normalize(obj)
             except Exception as e:
                 print(f"… {mode} failed for {p}: {e}")
@@ -305,8 +305,8 @@ def _try_load_bo_results(models_dir):
         listing = os.listdir(models_dir)
     except Exception as e:
         listing = [f"<could not list: {e}>"]
-    print("❌ Unable to load BO results. Looked in:", models_dir)
-    print("📂 Models dir contents:", listing)
+    print(" Unable to load BO results. Looked in:", models_dir)
+    print(" Models dir contents:", listing)
     return None
 
 

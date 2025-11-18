@@ -11,7 +11,7 @@ def load_models(models_dir="app/models"):
         MODELS["classifier"] = DemandForecaster2026(models_dir, "classifier")
         print("✅ Models loaded successfully.")
     except Exception as e:
-        print("⚠️ Model loading failed:", e)
+        print(" Model loading failed:", e)
 
 def get_models():
     """Used by predict route (and monkeypatched in tests)"""

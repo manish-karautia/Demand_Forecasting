@@ -34,11 +34,11 @@ class DemandForecaster2026:
         elif self.model_type == "classifier":
             model_file = "optimized_classifier_model.keras"
         else:
-            raise ValueError("❌ model_type must be 'regressor' or 'classifier'")
+            raise ValueError(" model_type must be 'regressor' or 'classifier'")
 
         keras_model_path = os.path.join(self.base_path, model_file)
         if not os.path.exists(keras_model_path):
-            raise FileNotFoundError(f"❌ Model file not found at {keras_model_path}")
+            raise FileNotFoundError(f" Model file not found at {keras_model_path}")
 
         # Load model (with custom metric for classifier)
         custom_objects = {"f1_score_metric": f1_score_metric} if self.model_type == "classifier" else {}

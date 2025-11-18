@@ -137,5 +137,5 @@ def create_test_user(app):
             u = User(email="test@example.com", password="hashed_password")
             db.session.add(u)
             db.session.commit()
-            print("✅ Test user created.")
+            print(" Test user created.")
 

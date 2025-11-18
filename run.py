@@ -10,7 +10,7 @@ if __name__ == '__main__':
 from app import db, create_app
 #from app.models import User  # or wherever your User model is defined
 
-app = create_app()
+#app = create_app()
 
 with app.app_context():
     db.create_all()
