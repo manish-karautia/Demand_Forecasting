@@ -62,9 +62,6 @@ def test_home(client):
 
 def test_predict_monkeypatch(monkeypatch, client):
 
-    # -------------------------------
-    # 1) Fake current_user
-    # -------------------------------
     class FakeUser:
         id = 1
         is_authenticated = True
@@ -72,7 +69,7 @@ def test_predict_monkeypatch(monkeypatch, client):
     monkeypatch.setattr("app.routes.current_user", FakeUser())
 
     # -------------------------------
-    # 2) Fake ML model
+    # Fake models
     # -------------------------------
     class FakeModel:
         def forecast(self, X): return [3.14]
@@ -82,28 +79,34 @@ def test_predict_monkeypatch(monkeypatch, client):
     monkeypatch.setattr("app.routes.classifier_model", FakeModel())
 
     # -------------------------------
-    # 3) Mock Prediction.query properly
+    # Fake DB query and Prediction model
     # -------------------------------
     class FakeQuery:
-        def filter(self, *args, **kwargs):
-            return self
-        
-        def filter_by(self, *args, **kwargs):
-            return self
-        
-        def order_by(self, *args, **kwargs):
-            return self
-        
-        def all(self):
-            return []   # No historical predictions
+        def filter(self, *args, **kwargs): return self
+        def filter_by(self, *args, **kwargs): return self
+        def order_by(self, *args, **kwargs): return self
+        def limit(self, n): return self
+        def all(self): return []
+        def first(self): return None
 
     class FakePrediction:
+        # Required attributes
+        user_id = 1
+        country = "Ghana"
+        medicine = "Family Planning and Reproduction"
+        timestamp = None  
+        predicted_demand = "100 units"
+
+        # Attach fake query
         query = FakeQuery()
+
+        def __init__(self, **kwargs):
+            pass
 
     monkeypatch.setattr("app.routes.Prediction", FakePrediction)
 
     # -------------------------------
-    # 4) Perform request
+    # Perform request
     # -------------------------------
     res = client.post(
         "/predict",
@@ -112,6 +115,7 @@ def test_predict_monkeypatch(monkeypatch, client):
     )
 
     assert res.status_code in (200, 302)
+
 
 
 
