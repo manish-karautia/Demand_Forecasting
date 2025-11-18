@@ -96,6 +96,32 @@ def test_predict_monkeypatch(monkeypatch, client):
         medicine = "Family Planning and Reproduction"
         timestamp = None  
         predicted_demand = "100 units"
+        
+    class FakeColumn:
+        """A dummy column that supports .asc() and comparisons."""
+        def asc(self):
+            return self
+        def __lt__(self, other):
+            return True    # Always pass the filter condition
+  
+
+    class FakeQuery:
+        def filter(self, *args, **kwargs): return self
+        def filter_by(self, *args, **kwargs): return self
+        def order_by(self, *args, **kwargs): return self
+        def limit(self, n): return self
+        def all(self): return []
+        def first(self): return None
+
+
+    class FakePrediction:
+        # Fake SQLAlchemy columns
+        timestamp = FakeColumn()
+        user_id = FakeColumn()
+        country = FakeColumn()
+        medicine = FakeColumn()    
+    
+    
 
         # Attach fake query
         query = FakeQuery()
