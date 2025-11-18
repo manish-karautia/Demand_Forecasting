@@ -1,6 +1,5 @@
 import json
 from run import app
-from app.database import User
 
 
 """
@@ -23,8 +22,8 @@ def test_predict_monkeypatch(monkeypatch):
     assert res.status_code == 200
     assert res.get_json()["prediction"] == 3.14
 """
-
 # tests/test_app.py
+import pytest
 
 def test_home(client):
     res = client.get("/")
@@ -36,7 +35,7 @@ def test_predict_monkeypatch(monkeypatch, client):
         def forecast(self, X):
             return [3.14]
 
-    # Override your real models (so TensorFlow is not required in tests)
+    # Inject fake models so TensorFlow is not loaded during tests
     monkeypatch.setattr("app.routes.regressor_model", FakeModel())
     monkeypatch.setattr("app.routes.classifier_model", FakeModel())
 
@@ -47,4 +46,3 @@ def test_predict_monkeypatch(monkeypatch, client):
     )
 
     assert res.status_code in (200, 302)
-
